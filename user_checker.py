@@ -77,14 +77,51 @@ class UserChecker:
         for root, dirs, files in os.walk(folder):  # Corrected unpacking
             # Process files
             for file in files:
-                file_path = os.path.join(root, file)
-                # Get the file info and add it to the database
-                file_info = self.get_file_info(file_path, severity)  # Removed "file" argument
-                self.add_file_to_db(file_info)
+                try:
+                    file_path = os.path.join(root, file)
+                    # Get the file info and add it to the database
+                    file_info = self.get_file_info(file_path, severity)  # Removed "file" argument
+                    self.add_file_to_db(file_info)
+                except Exception as e:
+                    print(f"Error processing file {file}: {e}")
+                    
+    def check_folder_for_changes(self, folder):
+        # Check if the folder has changed since the last check
+        files = os.walk(folder)
+        for root, dirs, files in files:
+            for file in files:
+                try:
+                    file_path = os.path.join(root, file)
+                    # Get the file info and check if it exists in the database
+                    file_info = self.get_file_info(file_path, 0)  # Removed "file" argument
+                    conn = sqlite3.connect(self.db)
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        SELECT name, path, hash, permissions, users, severity FROM file_hashes WHERE name=? AND path=?
+                    ''', (file_info[0], file_info[1]))
+                    result = cursor.fetchone()
+                    conn.close()
+
+                    if result is None:
+                        print(f"File {file} is new.")
+                    else:
+                        if result[2] != file_info[2]:
+                            print(f"File {file} has changed form {result[2]} to {file_info[2]}.")
+                        if result[3] != file_info[3]:
+                            print(f"File {file} has different permissions. used to be {result[3]} now is {file_info[3]}.")
+                        if result[4] != file_info[4]:
+                            print(f"File {file} has different user/group. used to be {result[4]} now is {file_info[4]}.")
+                    
+                except Exception as e:
+                    print(f"Error processing file {file}: {e}")
+        
+        
+        
 
         
 if __name__ == "__main__":
     user_checker = UserChecker()
     user_checker.build_db()
     user_checker.build_db_from_folder("/home/lukas", 1)
+    user_checker.check_folder_for_changes("/home/lukas")
     print("Database created successfully.")
