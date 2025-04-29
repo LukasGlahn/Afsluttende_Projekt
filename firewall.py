@@ -150,6 +150,7 @@ class FireWallChecker():
                         print(list_off_by)
                         print(f"Rule '{system_rules[rule]}' moved by {moved_places} position")
                         list_off_by += 1
+                    
 
                     
                 # New or changed rules end up here
