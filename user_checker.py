@@ -74,16 +74,17 @@ class UserChecker:
     
     def build_db_from_folder(self, folder, severity):
         # Iterate over all files and folders in the folder
-        for root, files in os.walk(folder):
+        for root, dirs, files in os.walk(folder):  # Corrected unpacking
             # Process files
             for file in files:
                 file_path = os.path.join(root, file)
                 # Get the file info and add it to the database
-                file_info = self.get_file_info(file_path, "file", severity)
+                file_info = self.get_file_info(file_path, severity)  # Removed "file" argument
                 self.add_file_to_db(file_info)
 
         
 if __name__ == "__main__":
     user_checker = UserChecker()
     user_checker.build_db()
+    user_checker.build_db_from_folder("/home/lukas", 1)
     print("Database created successfully.")
