@@ -51,21 +51,6 @@ class UserChecker:
         
         return hash_func.hexdigest()
 
-    def get_folder_hase(self, folder):
-        # Compute the hash of a folder by hashing all files in it.
-        hash_func = hashlib.new('md5')
-        # Iterate over all files in the folder
-        for root, _, files in os.walk(folder):
-            for file in files:
-                file_path = os.path.join(root, file)
-                # Open the file in binary mode
-                with open(file_path, 'rb') as f:
-                    # Read the file in chunks of 8192 bytes
-                    while chunk := f.read(8192):
-                        hash_func.update(chunk)
-        
-        return hash_func.hexdigest()
-    
     
     def get_file_info(self, file, severity):
         # Get info about file like hash, permissions, users, severity from linux system
@@ -74,6 +59,7 @@ class UserChecker:
         user = file_info.st_uid 
         group = file_info.st_gid
         # Calculate hash of the file
+        # If it's a file, get the hash using the get_file_hase method
         hash_md5 = self.get_file_hase(file)
         
         # Get the file name by splitting the path and getting the last element
@@ -86,7 +72,16 @@ class UserChecker:
         # (name, path, hash, permissions, users, severity) to mach the db structure
         return (file_name, path, hash_md5, permissions, f"{user}/{group}", severity)
     
-    
+    def build_db_from_folder(self, folder, severity):
+        # Iterate over all files and folders in the folder
+        for root, files in os.walk(folder):
+            # Process files
+            for file in files:
+                file_path = os.path.join(root, file)
+                # Get the file info and add it to the database
+                file_info = self.get_file_info(file_path, "file", severity)
+                self.add_file_to_db(file_info)
+
         
 if __name__ == "__main__":
     user_checker = UserChecker()
