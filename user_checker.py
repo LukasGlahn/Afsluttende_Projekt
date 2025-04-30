@@ -106,7 +106,7 @@ class UserChecker:
                         print(f"File {file} is new.")
                     else:
                         if result[2] != file_info[2]:
-                            print(f"File {file} has changed form {result[2]} to {file_info[2]}.")
+                            print(f"File {file} has changed. Hash went from {result[2]} to {file_info[2]}.")
                         if result[3] != file_info[3]:
                             print(f"File {file} has different permissions. used to be {result[3]} now is {file_info[3]}.")
                         if result[4] != file_info[4]:
