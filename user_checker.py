@@ -52,15 +52,27 @@ class UserChecker:
         return hash_func.hexdigest()
 
     
-    def get_file_info(self, file, severity):
+    def get_file_info(self, file, severity, checks = "hpu"):
         # Get info about file like hash, permissions, users, severity from linux system
         file_info = os.stat(file)
-        permissions = oct(file_info.st_mode)[-3:]
+        
+        # Get the file permissions if "p" is in checks 
+        if "p" in checks:
+            # Get the file permissions in octal format
+            permissions = oct(file_info.st_mode)[-3:]
+        else:
+            permissions = None
+
         user = file_info.st_uid 
         group = file_info.st_gid
-        # Calculate hash of the file
-        # If it's a file, get the hash using the get_file_hase method
-        hash_md5 = self.get_file_hase(file)
+        
+        # Get the file hash if "h" is in checks
+        if "h" in checks:
+            # Calculate hash of the file
+            # If it's a file, get the hash using the get_file_hase method
+            hash_md5 = self.get_file_hase(file)
+        else:
+            hash_md5 = None
         
         # Get the file name by splitting the path and getting the last element
         file_name = file.split("/")[-1]
@@ -72,18 +84,44 @@ class UserChecker:
         # (name, path, hash, permissions, users, severity) to mach the db structure
         return (file_name, path, hash_md5, permissions, f"{user}/{group}", severity)
     
-    def build_db_from_folder(self, folder, severity):
+    def build_db_from_folder(self, folder, sructure):
         # Iterate over all files and folders in the folder
-        for root, dirs, files in os.walk(folder):  # Corrected unpacking
-            # Process files
+        default_checks = sructure["default"]["checks"]
+        default_severity = sructure["default"]["severity"]
+        exceptions = sructure["exceptions"]
+        for root, dirs, files in os.walk(folder):  # unpacking files for prosessing
+            
+            # Check if the current folder is in the exceptions
+            match = next(
+                (folder for folder in exceptions if root == folder or root.startswith(folder + "/")),
+                None
+            )
+            if match:
+                checks = sructure["exceptions"][match]["checks"]
+                severity = sructure["exceptions"][match]["severity"]
+            else:
+                checks = default_checks
+                severity = default_severity
+
+
+            # Iterate over all files in the folder
             for file in files:
                 try:
                     file_path = os.path.join(root, file)
                     # Get the file info and add it to the database
-                    file_info = self.get_file_info(file_path, severity)  # Removed "file" argument
+                    file_info = self.get_file_info(file_path, severity, checks)
                     self.add_file_to_db(file_info)
                 except Exception as e:
                     print(f"Error processing file {file}: {e}")
+                    
+    def build_system_db(self, structure):
+        # Build the database with all posebel files and folders in the system
+        for folder in structure:
+            try:
+                self.build_db_from_folder(folder, structure[folder])
+            except Exception as e:
+                print(f"Error processing folder {folder}: {e}")
+
                     
     def check_folder_for_changes(self, folder):
         # Check if the folder has changed since the last check
@@ -116,12 +154,27 @@ class UserChecker:
                     print(f"Error processing file {file}: {e}")
         
         
-        
+
+structure = {
+    "/home": {
+        "default": {
+            "checks" : "hpu",
+            "severity" : 3
+            },
+        "exceptions": {
+            "/home/kr" : {
+                "checks" : "pu",
+                "severity" : 2
+                },
+            
+            },
+    }}        
 
         
 if __name__ == "__main__":
     user_checker = UserChecker()
     user_checker.build_db()
-    user_checker.build_db_from_folder("/home/lukas", 1)
+    #user_checker.build_db_from_folder("/home/lukas", 1)
+    user_checker.build_system_db(structure)
     user_checker.check_folder_for_changes("/home/lukas")
     print("Database created successfully.")
