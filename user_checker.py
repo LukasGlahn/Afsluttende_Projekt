@@ -85,10 +85,14 @@ class UserChecker:
         return (file_name, path, hash_md5, permissions, f"{user}/{group}", severity)
     
     def build_db_from_folder(self, folder, sructure):
-        # Iterate over all files and folders in the folder
+        
         default_checks = sructure["default"]["checks"]
         default_severity = sructure["default"]["severity"]
+        # exseption states
         exceptions = sructure["exceptions"]
+        file_exceptions = sructure["file_exceptions"]
+        
+        # Iterate over all files and folders in the folder
         for root, dirs, files in os.walk(folder):  # unpacking files for prosessing
             
             # Check if the current folder is in the exceptions
@@ -109,8 +113,15 @@ class UserChecker:
                 try:
                     file_path = os.path.join(root, file)
                     # Get the file info and add it to the database
-                    file_info = self.get_file_info(file_path, severity, checks)
-                    self.add_file_to_db(file_info)
+                    if file_path in file_exceptions:
+                        file_severity = file_exceptions[file_path]["severity"]
+                        file_checks = file_exceptions[file_path]["checks"]
+                        
+                        file_info = self.get_file_info(file_path, file_severity, file_checks)
+                        self.add_file_to_db(file_info)
+                    else:
+                        file_info = self.get_file_info(file_path, severity, checks)
+                        self.add_file_to_db(file_info)
                 except Exception as e:
                     print(f"Error processing file {file}: {e}")
                     
@@ -123,15 +134,43 @@ class UserChecker:
                 print(f"Error processing folder {folder}: {e}")
 
                     
-    def check_folder_for_changes(self, folder):
+    def check_folder_for_changes(self, folder, sructure):
         # Check if the folder has changed since the last check
+        default_checks = sructure["default"]["checks"]
+        default_severity = sructure["default"]["severity"]
+        
+        file_exceptions = sructure["file_exceptions"]
+        exceptions = sructure["exceptions"]
+        
         files = os.walk(folder)
         for root, dirs, files in files:
+            # Check if the current folder is in the exceptions
+            match = next(
+                (folder for folder in exceptions if root == folder or root.startswith(folder + "/")),
+                None
+            )
+            if match:
+                checks = sructure["exceptions"][match]["checks"]
+                severity = sructure["exceptions"][match]["severity"]
+            else:
+                checks = default_checks
+                severity = default_severity
+                
+            
             for file in files:
                 try:
+                    
                     file_path = os.path.join(root, file)
                     # Get the file info and check if it exists in the database
-                    file_info = self.get_file_info(file_path, 0)  # Removed "file" argument
+                    if file_path in file_exceptions:
+                        file_severity = file_exceptions[file_path]["severity"]
+                        file_checks = file_exceptions[file_path]["checks"]
+                        
+                        file_info = self.get_file_info(file_path, file_severity, file_checks)
+                    else:
+                        file_info = self.get_file_info(file_path, severity, checks)
+                    
+                    # get file info from the database
                     conn = sqlite3.connect(self.db)
                     cursor = conn.cursor()
                     cursor.execute('''
@@ -153,7 +192,15 @@ class UserChecker:
                 except Exception as e:
                     print(f"Error processing file {file}: {e}")
         
-        
+    
+    def check_system_for_changes(self, structure):
+        # Check if the system has changed since the last check
+        for folder in structure:
+            try:
+                self.check_folder_for_changes(folder, structure[folder])
+            except Exception as e:
+                print(f"Error processing folder {folder}: {e}")
+    
 
 structure = {
     "/home": {
@@ -168,13 +215,22 @@ structure = {
                 },
             
             },
+        "file_exceptions": {
+                "/home/lukas/test.py" : {
+                    "checks" : "pu",
+                    "severity" : 3
+                    },
+                "/home/lukas/database1.db" : {
+                    "checks" : "pu",
+                    "severity" : 1
+                    },
+            },
     }}        
 
         
 if __name__ == "__main__":
     user_checker = UserChecker()
     user_checker.build_db()
-    #user_checker.build_db_from_folder("/home/lukas", 1)
     user_checker.build_system_db(structure)
-    user_checker.check_folder_for_changes("/home/lukas")
+    user_checker.check_system_for_changes(structure)
     print("Database created successfully.")

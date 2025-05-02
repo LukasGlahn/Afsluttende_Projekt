@@ -175,3 +175,4 @@ cython_debug/
 
 # other stuff
 *.db
+test.json
