@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import hashlib
+import stat
 
 
 class UserChecker:
@@ -54,7 +55,7 @@ class UserChecker:
     
     def get_file_info(self, file, severity, checks = "hpu"):
         # Get info about file like hash, permissions, users, severity from linux system
-        file_info = os.stat(file)
+        file_info = os.lstat(file)
         
         # Get the file permissions if "p" is in checks 
         if "p" in checks:
@@ -63,16 +64,29 @@ class UserChecker:
         else:
             permissions = None
 
-        user = file_info.st_uid 
-        group = file_info.st_gid
+        if "u" in checks:
+            user = file_info.st_uid 
+            group = file_info.st_gid
+            user_grupe = f"{user}/{group}"
+        else:
+            user_grupe = None
         
         # Get the file hash if "h" is in checks
         if "h" in checks:
-            # Calculate hash of the file
-            # If it's a file, get the hash using the get_file_hase method
-            hash_md5 = self.get_file_hase(file)
+            mode = os.lstat(file).st_mode
+            if stat.S_ISREG(mode):
+                # Calculate hash of the file
+                # If it's a file, get the hash using the get_file_hase method
+                file_data = self.get_file_hase(file)
+            elif stat.S_ISLNK(mode):
+                # If it's a symlink, get the target of the symlink
+                file_data = os.path.realpath(file)
+            else:
+                # If it's not a regular file or symlink, set file_data to None
+                print(f"File did not mach the a filetile that is comparebelle: {file}")
+                file_data = None
         else:
-            hash_md5 = None
+            file_data = None
         
         # Get the file name by splitting the path and getting the last element
         file_name = file.split("/")[-1]
@@ -82,7 +96,7 @@ class UserChecker:
         
         # return the file info as a tuple
         # (name, path, hash, permissions, users, severity) to mach the db structure
-        return (file_name, path, hash_md5, permissions, f"{user}/{group}", severity)
+        return (file_name, path, file_data, permissions, user_grupe, severity)
     
     def build_db_from_folder(self, folder, sructure):
         
@@ -100,9 +114,13 @@ class UserChecker:
                 (folder for folder in exceptions if root == folder or root.startswith(folder + "/")),
                 None
             )
+            
             if match:
-                checks = sructure["exceptions"][match]["checks"]
-                severity = sructure["exceptions"][match]["severity"]
+                if sructure["exceptions"][match]["checks"] == "":
+                    continue
+                else:
+                    checks = sructure["exceptions"][match]["checks"]
+                    severity = sructure["exceptions"][match]["severity"]
             else:
                 checks = default_checks
                 severity = default_severity
@@ -113,17 +131,21 @@ class UserChecker:
                 try:
                     file_path = os.path.join(root, file)
                     # Get the file info and add it to the database
+                    
                     if file_path in file_exceptions:
-                        file_severity = file_exceptions[file_path]["severity"]
-                        file_checks = file_exceptions[file_path]["checks"]
-                        
-                        file_info = self.get_file_info(file_path, file_severity, file_checks)
-                        self.add_file_to_db(file_info)
+                        if sructure["file_exceptions"][file_path]["checks"] == "":
+                            continue
+                        else:
+                            file_severity = file_exceptions[file_path]["severity"]
+                            file_checks = file_exceptions[file_path]["checks"]
+                            
+                            file_info = self.get_file_info(file_path, file_severity, file_checks)
+                            self.add_file_to_db(file_info)
                     else:
                         file_info = self.get_file_info(file_path, severity, checks)
                         self.add_file_to_db(file_info)
                 except Exception as e:
-                    print(f"Error processing file {file}: {e}")
+                    print(f"Error processing file {file_path}: {e}")
                     
     def build_system_db(self, structure):
         # Build the database with all posebel files and folders in the system
@@ -150,8 +172,11 @@ class UserChecker:
                 None
             )
             if match:
-                checks = sructure["exceptions"][match]["checks"]
-                severity = sructure["exceptions"][match]["severity"]
+                if sructure["exceptions"][match]["checks"] == "":
+                    continue
+                else:
+                    checks = sructure["exceptions"][match]["checks"]
+                    severity = sructure["exceptions"][match]["severity"]
             else:
                 checks = default_checks
                 severity = default_severity
@@ -162,11 +187,15 @@ class UserChecker:
                     
                     file_path = os.path.join(root, file)
                     # Get the file info and check if it exists in the database
+                    
                     if file_path in file_exceptions:
-                        file_severity = file_exceptions[file_path]["severity"]
-                        file_checks = file_exceptions[file_path]["checks"]
-                        
-                        file_info = self.get_file_info(file_path, file_severity, file_checks)
+                        if sructure["file_exceptions"][file_path]["checks"] == "":
+                            continue
+                        else:
+                            file_severity = file_exceptions[file_path]["severity"]
+                            file_checks = file_exceptions[file_path]["checks"]
+                            
+                            file_info = self.get_file_info(file_path, file_severity, file_checks)
                     else:
                         file_info = self.get_file_info(file_path, severity, checks)
                     
@@ -180,17 +209,17 @@ class UserChecker:
                     conn.close()
 
                     if result is None:
-                        print(f"File {file} is new.")
+                        print(f"File {file_path} is new.")
                     else:
                         if result[2] != file_info[2]:
-                            print(f"File {file} has changed. Hash went from {result[2]} to {file_info[2]}.")
+                            print(f"File {file_path} has changed. Hash went from {result[2]} to {file_info[2]}.")
                         if result[3] != file_info[3]:
-                            print(f"File {file} has different permissions. used to be {result[3]} now is {file_info[3]}.")
+                            print(f"File {file_path} has different permissions. used to be {result[3]} now is {file_info[3]}.")
                         if result[4] != file_info[4]:
-                            print(f"File {file} has different user/group. used to be {result[4]} now is {file_info[4]}.")
+                            print(f"File {file_path} has different user/group. used to be {result[4]} now is {file_info[4]}.")
                     
                 except Exception as e:
-                    print(f"Error processing file {file}: {e}")
+                    print(f"Error processing file {file_path}: {e}")
         
     
     def check_system_for_changes(self, structure):
