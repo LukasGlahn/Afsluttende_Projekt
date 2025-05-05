@@ -1,3 +1,5 @@
+import json
+
 structure = {
     "/home": {
         "default": {
@@ -33,6 +35,10 @@ structure = {
                 "/etc/sv/ssh/supervise" : {
                     "checks" : "pu",
                     "severity" : 1
+                    },
+                "/etc/mtab" : {
+                    "checks" : "",
+                    "severity" : 0
                     },
             },
         
@@ -209,21 +215,6 @@ structure = {
             },
         
     },
-    "/run": {
-        "default": {
-            "checks" : "hpu",
-            "severity" : 3
-            },
-        
-        "exceptions": {
-            
-            },
-        
-        "file_exceptions": {
-
-            },
-        
-    },
     "/usr": {
         "default": {
             "checks" : "hpu",
@@ -246,12 +237,60 @@ structure = {
             },
         
         "exceptions": {
-            
+            "/var/lib/docker/overlay2" : {
+                "checks" : "",
+                "severity" : 0
+                },
+            "/var/lib/docker/image/overlay2/layerdb/sha256" : {
+                "checks" : "",
+                "severity" : 0
+                },
+            "/var/lib/docker/image/overlay2/imagedb/content/sha256" : {
+                "checks" : "",
+                "severity" : 0
+                },
+            "/var/lib/containerd/io.containerd.content.v1.content/blobs/sha256" : {
+                "checks" : "",
+                "severity" : 0
+                },
+            "/var/lib/docker/containers" : {
+                "checks" : "pu",
+                "severity" : 3
+                },
+            "/var/log/journal" : {
+                "checks" : "",
+                "severity" : 3
+                },
+            "/var/lib/aziot/edged/mnt" : {
+                "checks" : "pu",
+                "severity" : 3
+                },
             },
         
         "file_exceptions": {
-
+            "/var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db" : {
+                    "checks" : "pu",
+                    "severity" : 3
+                    },
+            "/var/log/wtmp" : {
+                    "checks" : "pu",
+                    "severity" : 3
+                    },
+            "/var/lib/docker/network/files/local-kv.db" : {
+                    "checks" : "pu",
+                    "severity" : 3
+                    },
+            "/var/log/lastlog" : {
+                    "checks" : "pu",
+                    "severity" : 3
+                    },
+            "/var/lib/fail2ban/fail2ban.sqlite3" : {
+                    "checks" : "pu",
+                    "severity" : 3
+                    },
             },
-        
-    },
+        },
     }
+
+with open ('structure.json', 'w') as f:
+    json.dump(structure, f, indent=4)

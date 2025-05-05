@@ -2,11 +2,15 @@ import sqlite3
 import os
 import hashlib
 import stat
+import json
 
 
 class UserChecker:
     def __init__(self):
         self.db = "database1.db"
+        with open("structure.json", "r") as file:
+            json_structure = file.read()
+        self.structure = json.loads(json_structure)
 
     def build_db(self):
         # Create a new SQLite database with all necessary tables
@@ -99,7 +103,7 @@ class UserChecker:
         return (file_name, path, file_data, permissions, user_grupe, severity)
     
     def build_db_from_folder(self, folder, sructure):
-        
+        print(folder)
         default_checks = sructure["default"]["checks"]
         default_severity = sructure["default"]["severity"]
         # exseption states
@@ -147,8 +151,10 @@ class UserChecker:
                 except Exception as e:
                     print(f"Error processing file {file_path}: {e}")
                     
-    def build_system_db(self, structure):
+    def build_system_db(self):
         # Build the database with all posebel files and folders in the system
+        
+        structure = self.structure
         for folder in structure:
             try:
                 self.build_db_from_folder(folder, structure[folder])
@@ -158,11 +164,14 @@ class UserChecker:
                     
     def check_folder_for_changes(self, folder, sructure):
         # Check if the folder has changed since the last check
+        print(folder)
         default_checks = sructure["default"]["checks"]
         default_severity = sructure["default"]["severity"]
         
         file_exceptions = sructure["file_exceptions"]
         exceptions = sructure["exceptions"]
+        
+        vialations = []
         
         files = os.walk(folder)
         for root, dirs, files in files:
@@ -185,6 +194,7 @@ class UserChecker:
             for file in files:
                 try:
                     
+                    file_vialations  = []
                     file_path = os.path.join(root, file)
                     # Get the file info and check if it exists in the database
                     
@@ -208,58 +218,65 @@ class UserChecker:
                     result = cursor.fetchone()
                     conn.close()
 
+                    # Check if the file exists in the database
                     if result is None:
                         print(f"File {file_path} is new.")
+                        
+                        file_vialations.append({
+                                "problem": "new",
+                                "file content": f"File {file_path} is new."
+                                })
                     else:
+                        #check for changes in the file
                         if result[2] != file_info[2]:
                             print(f"File {file_path} has changed. Hash went from {result[2]} to {file_info[2]}.")
+                            file_vialations.append({
+                                "problem": "file change",
+                                "file content": f"File {file_path} has changed. Hash went from {result[2]} to {file_info[2]}."
+                                })
                         if result[3] != file_info[3]:
                             print(f"File {file_path} has different permissions. used to be {result[3]} now is {file_info[3]}.")
+
+                            file_vialations.append({
+                                "problem": "permissions",
+                                "file content": f"File {file_path} has different permissions. used to be {result[3]} now is {file_info[3]}."
+                                })
                         if result[4] != file_info[4]:
                             print(f"File {file_path} has different user/group. used to be {result[4]} now is {file_info[4]}.")
+                            file_vialations.append({
+                                "problem": "user/group",
+                                "file content": f"File {file_path} has different user/group. used to be {result[4]} now is {file_info[4]}."
+                                })
                     
+                    # If ther was a change add it to vialations so it can be returnd later
+                    if len(file_vialations) > 0:
+                        vialations.append({
+                            "file" : file_path,
+                            "vialations" : file_vialations,
+                        })
                 except Exception as e:
                     print(f"Error processing file {file_path}: {e}")
+        return vialations
         
     
-    def check_system_for_changes(self, structure):
+    def check_system_for_changes(self):
         # Check if the system has changed since the last check
+        structure = self.structure
+        
+        vialations = []
+        
         for folder in structure:
             try:
-                self.check_folder_for_changes(folder, structure[folder])
+                vialations += self.check_folder_for_changes(folder, structure[folder])
             except Exception as e:
                 print(f"Error processing folder {folder}: {e}")
-    
-
-structure = {
-    "/home": {
-        "default": {
-            "checks" : "hpu",
-            "severity" : 3
-            },
-        "exceptions": {
-            "/home/kr" : {
-                "checks" : "pu",
-                "severity" : 2
-                },
-            
-            },
-        "file_exceptions": {
-                "/home/lukas/test.py" : {
-                    "checks" : "pu",
-                    "severity" : 3
-                    },
-                "/home/lukas/database1.db" : {
-                    "checks" : "pu",
-                    "severity" : 1
-                    },
-            },
-    }}        
+                
+        return vialations
 
         
 if __name__ == "__main__":
     user_checker = UserChecker()
     user_checker.build_db()
-    user_checker.build_system_db(structure)
-    user_checker.check_system_for_changes(structure)
+    user_checker.build_system_db()
+    print(user_checker.check_system_for_changes())
     print("Database created successfully.")
