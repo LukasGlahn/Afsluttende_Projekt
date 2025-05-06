@@ -102,6 +102,9 @@ class SystemFileChecker:
         # (name, path, hash, permissions, users, severity) to mach the db structure
         return (file_name, path, file_data, permissions, user_grupe, severity)
     
+    ##################################################################################################
+    # Filling part
+    
     def build_db_from_folder(self, folder, sructure):
         print(folder)
         default_checks = sructure["default"]["checks"]
@@ -161,7 +164,9 @@ class SystemFileChecker:
             except Exception as e:
                 print(f"Error processing folder {folder}: {e}")
 
-                    
+    ##################################################################################################
+    # Comparesen part
+                  
     def check_folder_for_changes(self, folder, sructure):
         # Check if the folder has changed since the last check
         print(folder)

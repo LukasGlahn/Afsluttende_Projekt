@@ -30,6 +30,16 @@ class system_checker():
         except FileNotFoundError:
             return False
     
+    def warn(self, info, severity):
+        loging_score = 5 - severity
+        
+        if loging_score < 0:
+            loging_score = 0
+        
+        print(info, " at level ", loging_score)
+        ## Warning about a insdent to the systemlog to be send to server
+        # If in testing keep comented out wnen not needed to stop spam to watts 
+        log(info, loging_score)
     
     # build all databases for the system to fungtion
     def build_database(self):
@@ -39,24 +49,38 @@ class system_checker():
         # fille te database with all files requerd
         self.system_file_checker.build_system_db()
         
-        
+    
+    ## Full scan weary resouse intesiv and takes a while to do
     def full_scan(self):
-        #check if the database exsists
+        ## Check if the database exsists
         if self.file_exsists():
             pass
         else:
             self.build_database()
             return
         
+        ## Scan the system
         firewall_vialations = self.fire_wall_checker.check_difrense()
         
         changed_files = self.system_file_checker.check_system_for_changes()
         
+        ## warn about all found problems
+        # changed_files
+        for vialation in changed_files:
+            self.warn(vialation["file content"], vialation["severity"])
         
+        # firewall_vialations
+        for vialation in firewall_vialations:
+            self.warn(vialation["info"], vialation["severity"])
     
+    ## smaller scan that can be run offen as it dos not take to much too run
     def small_scan(self):
-        pass
-    
+        ## Scan the system
+        firewall_vialations = self.fire_wall_checker.check_difrense()
+
+        # firewall_vialations
+        for vialation in firewall_vialations:
+            self.warn(vialation["info"], vialation["severity"])
     
 
 
