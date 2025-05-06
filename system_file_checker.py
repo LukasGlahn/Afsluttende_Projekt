@@ -5,9 +5,9 @@ import stat
 import json
 
 
-class UserChecker:
-    def __init__(self):
-        self.db = "database1.db"
+class SystemFileChecker:
+    def __init__(self, database_name):
+        self.db = database_name
         with open("structure.json", "r") as file:
             json_structure = file.read()
         self.structure = json.loads(json_structure)
@@ -224,7 +224,8 @@ class UserChecker:
                         
                         file_vialations.append({
                                 "problem": "new",
-                                "file content": f"File {file_path} is new."
+                                "file content": f"File {file_path} is new.",
+                                "severity" : file_info[5]
                                 })
                     else:
                         #check for changes in the file
@@ -232,20 +233,23 @@ class UserChecker:
                             print(f"File {file_path} has changed. Hash went from {result[2]} to {file_info[2]}.")
                             file_vialations.append({
                                 "problem": "file change",
-                                "file content": f"File {file_path} has changed. Hash went from {result[2]} to {file_info[2]}."
+                                "file content": f"File {file_path} has changed. Hash went from {result[2]} to {file_info[2]}.",
+                                "severity" : result[5]
                                 })
                         if result[3] != file_info[3]:
                             print(f"File {file_path} has different permissions. used to be {result[3]} now is {file_info[3]}.")
 
                             file_vialations.append({
                                 "problem": "permissions",
-                                "file content": f"File {file_path} has different permissions. used to be {result[3]} now is {file_info[3]}."
+                                "file content": f"File {file_path} has different permissions. used to be {result[3]} now is {file_info[3]}.",
+                                "severity" : result[5]
                                 })
                         if result[4] != file_info[4]:
                             print(f"File {file_path} has different user/group. used to be {result[4]} now is {file_info[4]}.")
                             file_vialations.append({
                                 "problem": "user/group",
-                                "file content": f"File {file_path} has different user/group. used to be {result[4]} now is {file_info[4]}."
+                                "file content": f"File {file_path} has different user/group. used to be {result[4]} now is {file_info[4]}.",
+                                "severity" : result[5]
                                 })
                     
                     # If ther was a change add it to vialations so it can be returnd later
@@ -275,8 +279,8 @@ class UserChecker:
 
         
 if __name__ == "__main__":
-    user_checker = UserChecker()
-    user_checker.build_db()
-    user_checker.build_system_db()
-    print(user_checker.check_system_for_changes())
+    system_checker = SystemFileChecker("database1.db")
+    system_checker.build_db()
+    system_checker.build_system_db()
+    print(system_checker.check_system_for_changes())
     print("Database created successfully.")
