@@ -101,14 +101,14 @@ class FireWallChecker():
                 vialations.append( {
                     "problem": "firewall",
                     "info": f"Missing ruels {missing_rules} was found",
-                    "severity" : 3
+                    "severity" : 4
                     })
             
             if len(new_rules) > 0:
                 vialations.append( {
                     "problem": "firewall",
                     "info": f"New ruels {new_rules} was found",
-                    "severity" : 3
+                    "severity" : 4
                     })
             
             for rule in range(len(system_rules)):
@@ -123,7 +123,7 @@ class FireWallChecker():
                             vialations.append( {
                                 "problem": "firewall",
                                 "info": f"Rule '{system_rules[rule]}' moved by {moved_places} position",
-                                "severity" : 3
+                                "severity" : 4
                                 })
                             list_off_by += 1
 
@@ -141,7 +141,7 @@ class FireWallChecker():
                         vialations.append({
                                 "problem": "firewall",
                                 "info": f"Rule '{system_rules[rule]}' is missing",
-                                "severity" : 3
+                                "severity" : 4
                                 })
                         
                         list_off_by -= 1
@@ -152,7 +152,7 @@ class FireWallChecker():
                         vialations.append( {
                                 "problem": "firewall",
                                 "info": f"Rule '{system_rules[rule]}' moved by {moved_places} position",
-                                "severity" : 3
+                                "severity" : 4
                                 })
                         
                         list_off_by += 1

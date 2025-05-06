@@ -4,12 +4,12 @@ structure = {
     "/home": {
         "default": {
             "checks" : "hpu",
-            "severity" : 3
+            "severity" : 4
             },
         "exceptions": {
             "/home/lukas/watts_dog" : {
                 "checks" : "pu",
-                "severity" : 3
+                "severity" : 4
                 },
             
             },
@@ -30,11 +30,11 @@ structure = {
         "file_exceptions": {
                 "/etc/sv/ssh/supervise" : {
                     "checks" : "pu",
-                    "severity" : 1
+                    "severity" : 2
                     },
                 "/etc/sv/ssh/supervise" : {
                     "checks" : "pu",
-                    "severity" : 1
+                    "severity" : 2
                     },
                 "/etc/mtab" : {
                     "checks" : "",
@@ -91,7 +91,7 @@ structure = {
     "/root": {
         "default": {
             "checks" : "hpu",
-            "severity" : 3
+            "severity" : 4
             },
         
         "exceptions": {
@@ -151,7 +151,7 @@ structure = {
     "/lost+found": {
         "default": {
             "checks" : "hpu",
-            "severity" : 3
+            "severity" : 2
             },
         
         "exceptions": {
@@ -192,11 +192,11 @@ structure = {
                     },
             "/mnt/storage1/edgeAgent/availability/avaliability.checkpoint" : {
                     "checks" : "pu",
-                    "severity" : 3
+                    "severity" : 2
                     },
             "/mnt/storage1/influxdb2/data/influxd.bolt" : {
                     "checks" : "pu",
-                    "severity" : 3
+                    "severity" : 2
                     },
             }, 
     },
