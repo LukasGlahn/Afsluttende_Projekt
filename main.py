@@ -1,6 +1,7 @@
 import subprocess
 from system_file_checker import SystemFileChecker
 from firewall import FireWallChecker
+import sys
 
 
 ## Loging fungtion using subprosess to make a log entry if a inconsistensy is found
@@ -16,7 +17,7 @@ def log(info,priority=7):
 #####################################################################################
 # Main class to handel all info
 
-class system_checker():
+class System_Checker():
     def __init__(self):
         self.database = "database1.db"
         self.system_file_checker = SystemFileChecker(self.database)
@@ -86,5 +87,25 @@ class system_checker():
 
 
 if __name__ == "__main__":
+    system_checker = System_Checker()
 
-    log("hello Watts",6)
+
+    arguments = sys.argv
+    
+    scan_type = None
+    if "full_scan" in arguments:
+        scan_type = "full_scan"
+    if "small_scan" in arguments:
+        scan_type = "small_scan"
+    if "build_db" in arguments:
+        scan_type = "build_db"
+    
+    if scan_type == "full_scan":
+        system_checker.full_scan()
+    elif scan_type == "small_scan":
+        system_checker.small_scan()
+    elif scan_type == "build_db":
+        system_checker.build_database()
+    else:
+        exit()
+    
