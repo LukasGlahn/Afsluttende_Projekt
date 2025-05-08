@@ -166,9 +166,10 @@ class SystemFileChecker:
 
     ##################################################################################################
     # Comparesen part
-                  
+    
+    # Check if the folder has changed since the last check         
     def check_folder_for_changes(self, folder, sructure):
-        # Check if the folder has changed since the last check
+        ## unpack all info about the sructure
         print(folder)
         default_checks = sructure["default"]["checks"]
         default_severity = sructure["default"]["severity"]
@@ -176,6 +177,7 @@ class SystemFileChecker:
         file_exceptions = sructure["file_exceptions"]
         exceptions = sructure["exceptions"]
         
+        # list to store vialations found doring the test
         vialations = []
         
         files = os.walk(folder)

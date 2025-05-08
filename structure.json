@@ -2,12 +2,12 @@
     "/home": {
         "default": {
             "checks": "hpu",
-            "severity": 3
+            "severity": 4
         },
         "exceptions": {
             "/home/lukas/watts_dog": {
                 "checks": "pu",
-                "severity": 3
+                "severity": 4
             }
         },
         "file_exceptions": {}
@@ -26,7 +26,36 @@
             "/etc/mtab": {
                 "checks": "",
                 "severity": 0
+            },
+            "/etc/crontab": {
+                "checks": "hpu",
+                "severity": 5
+            },
+            "/etc/cron.d": {
+                "checks": "hpu",
+                "severity": 5
+            },
+            "/etc/cron.daily": {
+                "checks": "hpu",
+                "severity": 5
+            },
+            "/etc/cron.hourly": {
+                "checks": "hpu",
+                "severity": 5
+            },
+            "/etc/cron.weekly": {
+                "checks": "hpu",
+                "severity": 5
+            },
+            "/etc/cron.monthly": {
+                "checks": "hpu",
+                "severity": 5
+            },
+            "/etc/anacrontab": {
+                "checks": "hpu",
+                "severity": 5
             }
+            
         }
     },
     "/bin": {
@@ -176,6 +205,14 @@
             "/var/lib/aziot/edged/mnt": {
                 "checks": "pu",
                 "severity": 3
+            },
+            "/var/spool/cron": {
+                "checks": "hpu",
+                "severity": 5
+            },
+            "/var/spool/anacron/": {
+                "checks": "hpu",
+                "severity": 5
             }
         },
         "file_exceptions": {
