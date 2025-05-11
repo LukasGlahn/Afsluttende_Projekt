@@ -176,3 +176,8 @@ cython_debug/
 # other stuff
 *.db
 test.json
+
+# Private key files
+# Certificate files
+*.key
+*.crt

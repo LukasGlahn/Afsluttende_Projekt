@@ -1,6 +1,7 @@
 import socket
 import json
 import re
+import ssl
 
 
 class Proxy():
@@ -15,39 +16,44 @@ class Proxy():
         if re.match(r"^[a-zA-Z0-9_]+$", db_hash) is None:
             return "bad db_hash"
         
-        host = self.server  # Loopback adress to hit the docker container
+        host = self.server  # Loopback address to hit the docker container
         port = 5125  # socket server port number
 
         client_socket = socket.socket()  # instantiate
+
+        # Wrap the socket with SSL
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.check_hostname = False  # Disable hostname verification
+        context.verify_mode = ssl.CERT_NONE  # Disable certificate verification
+        client_socket = context.wrap_socket(client_socket, server_hostname=host)
+
         client_socket.connect((host, port))  # connect to the server
 
         # Info for the server
         devise_info = {
-            "protocol" : "db_check",
-            "hg_ssid" : hg_ssid,
-            "db_hash" : db_hash
+            "protocol": "db_check",
+            "hg_ssid": hg_ssid,
+            "db_hash": db_hash
         }
         
-        # Make the dir in to a json string for eazy sending
+        # Make the dir into a JSON string for easy sending
         message = json.dumps(devise_info)
 
-        
         client_socket.send(message.encode())  # send message
         data = client_socket.recv(1024).decode()  # receive response
 
         response = json.loads(data)
-        
         client_socket.close()  # close the connection
         
-        # Chesk the response if good to indicate that the hash mached
+        # Check the response if good to indicate that the hash matched
         if response["status"] == "good":
-            return json.dumps({"status" : "good"})
+            return json.dumps({"status": "good"})
         elif response["status"] == "ssid not in db":
-            return json.dumps({"status" : "ssid not in db"})
+            return json.dumps({"status": "ssid not in db"})
         elif response["status"] == "update":
-            return json.dumps({"status" : "update"})
+            return json.dumps({"status": "update"})
         else:
-            return json.dumps({"status" : "Hash did not mach"})
+            return json.dumps({"status": "Hash did not match"})
     
     def db_hash_report(self, hg_ssid, db_hash):
         # Check if the ssid and db_hash are valid
@@ -56,35 +62,40 @@ class Proxy():
         if re.match(r"^[a-zA-Z0-9_]+$", db_hash) is None:
             return "bad db_hash"
         
-        host = self.server  # Loopback adress to hit the docker container
+        host = self.server  # Loopback address to hit the docker container
         port = 5125  # socket server port number
 
         client_socket = socket.socket()  # instantiate
+
+        # Wrap the socket with SSL
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.check_hostname = False  # Disable hostname verification
+        context.verify_mode = ssl.CERT_NONE  # Disable certificate verification
+        client_socket = context.wrap_socket(client_socket, server_hostname=host)
+
         client_socket.connect((host, port))  # connect to the server
 
         # Info for the server
         devise_info = {
-            "protocol" : "db_hash_report",
-            "hg_ssid" : hg_ssid,
-            "db_hash" : db_hash
+            "protocol": "db_hash_report",
+            "hg_ssid": hg_ssid,
+            "db_hash": db_hash
         }
         
-        # Make the dir in to a json string for eazy sending
+        # Make the dir into a JSON string for easy sending
         message = json.dumps(devise_info)
 
-        
         client_socket.send(message.encode())  # send message
         data = client_socket.recv(1024).decode()  # receive response
 
         response = json.loads(data)
-        
         client_socket.close()  # close the connection
         
-        # Chesk the response if good to indicate that the hash mached
+        # Check the response if good to indicate that the hash matched
         if response["status"] == "good":
-            return json.dumps({"status" : "good"})
+            return json.dumps({"status": "good"})
         else:
-            return json.dumps({"status" : "Failed"})
+            return json.dumps({"status": "Failed"})
     
     
     def main(self):

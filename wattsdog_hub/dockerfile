@@ -4,6 +4,10 @@ WORKDIR /wattsdog_conector
 
 COPY ./main.py .
 
+COPY ./server.crt .
+
+COPY ./server.key .
+
 ENV PORT=5125
 
 EXPOSE 5125

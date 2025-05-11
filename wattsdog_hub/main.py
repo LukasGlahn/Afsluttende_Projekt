@@ -2,7 +2,7 @@ import socket
 import json
 import re
 import sqlite3
-
+import ssl
 
 
 class WatssDogHub():
@@ -97,10 +97,14 @@ class WatssDogHub():
         port = 5125  # initiate port no above 1024
 
         server_socket = socket.socket()  # get instance
-        # look closely. The bind() function takes tuple as argument
         server_socket.bind((host, port))  # bind host address and port together
 
-        # configure how many client the server can listen simultaneously
+        # Wrap the socket with SSL
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(certfile="server.crt", keyfile="server.key")
+        server_socket = context.wrap_socket(server_socket, server_side=True)
+
+        # configure how many clients the server can listen to simultaneously
         server_socket.listen(2)
         
         while True:
@@ -116,10 +120,8 @@ class WatssDogHub():
                 server_response = self.check_database_hash_mach(data["hg_ssid"], data["db_hash"])
             if data["protocol"] == "db_hash_report":
                 server_response = self.get_hash_report(data["hg_ssid"], data["db_hash"])
-            
-            
+        
             conn.send(server_response.encode())  # send data to the client
-
             conn.close()  # close the connection
 
 
@@ -130,4 +132,3 @@ if __name__ == "__main__":
     hub = WatssDogHub()
     hub.make_db()
     hub.main()
-    
