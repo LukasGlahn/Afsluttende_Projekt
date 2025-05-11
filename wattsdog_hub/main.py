@@ -34,61 +34,67 @@ class WatssDogHub():
     
     
     def check_database_hash_mach(self, hg_ssid, db_hash):
-        
-        # Input sanitation
-        if re.match(r"^[a-zA-Z0-9_]+$", hg_ssid) is None and len(hg_ssid) == 64:
-            return json.dumps({"status" : "bad ssid"})
-        if re.match(r"^[a-zA-Z0-9_]+$", db_hash) is None:
-            return json.dumps({"status" : "bad db_hash"})
-        
-        # Connect to the SQLite database (or create it if it doesn't exist)
-        conn = sqlite3.connect(self.database)
-        cursor = conn.cursor()
+        try:
+            # Input sanitation
+            if re.match(r"^[a-zA-Z0-9_]+$", hg_ssid) is None and len(hg_ssid) == 64:
+                return json.dumps({"status" : "bad ssid"})
+            if re.match(r"^[a-zA-Z0-9_]+$", db_hash) is None:
+                return json.dumps({"status" : "bad db_hash"})
+            
+            # Connect to the SQLite database (or create it if it doesn't exist)
+            conn = sqlite3.connect(self.database)
+            cursor = conn.cursor()
 
-        # Check if the ssid already exists in the table
-        cursor.execute("SELECT * FROM hg_integrity WHERE ssid=?", (hg_ssid,))
-        row = cursor.fetchone()
+            # Check if the ssid already exists in the table
+            cursor.execute("SELECT * FROM hg_integrity WHERE ssid=?", (hg_ssid,))
+            row = cursor.fetchone()
 
-        if row:
-            if row[3] == 1:
-                return json.dumps({"status" : "update"})
-            # If the ssid exists, compare the hash values
-            elif row[2] == db_hash:
-                return json.dumps({"status" : "good"})
+            if row:
+                if row[3] == 1:
+                    return json.dumps({"status" : "update"})
+                # If the ssid exists, compare the hash values
+                elif row[2] == db_hash:
+                    return json.dumps({"status" : "good"})
+                else:
+                    return json.dumps({"status" : "hash did not mach"})
             else:
-                return json.dumps({"status" : "hash did not mach"})
-        else:
-            return json.dumps({"status" : "ssid not in db"})
+                return json.dumps({"status" : "ssid not in db"})
+        except Exception as e:
+            print(e)
+            return json.dumps({"status" : "hash did not mach"})
     
     
     def get_hash_report(self, hg_ssid, db_hash):
-        
-        #input sanitation
-        if re.match(r"^[a-zA-Z0-9_]+$", hg_ssid) is None and len(hg_ssid) == 64:
-            return json.dumps({"status" : "bad ssid"})
-        if re.match(r"^[a-zA-Z0-9_]+$", db_hash) is None:
-            return json.dumps({"status" : "bad db_hash"})
-        
-        # Connect to the SQLite database (or create it if it doesn't exist)
-        conn = sqlite3.connect(self.database)
-        cursor = conn.cursor()
+        try:
+            #input sanitation
+            if re.match(r"^[a-zA-Z0-9_]+$", hg_ssid) is None and len(hg_ssid) == 64:
+                return json.dumps({"status" : "bad ssid"})
+            if re.match(r"^[a-zA-Z0-9_]+$", db_hash) is None:
+                return json.dumps({"status" : "bad db_hash"})
+            
+            # Connect to the SQLite database (or create it if it doesn't exist)
+            conn = sqlite3.connect(self.database)
+            cursor = conn.cursor()
 
-        # Check if the ssid already exists in the table
-        cursor.execute("SELECT refresh FROM hg_integrity WHERE ssid=?", (hg_ssid,))
-        row = cursor.fetchone()
+            # Check if the ssid already exists in the table
+            cursor.execute("SELECT refresh FROM hg_integrity WHERE ssid=?", (hg_ssid,))
+            row = cursor.fetchone()
 
-        if row:
-            # If the ssid exists, compare the hash values
-            if row[0] == 1:
-                cursor.execute("UPDATE hg_integrity SET refresh = 0, db_hash = ? WHERE ssid=?", (db_hash, hg_ssid))
+            if row:
+                # If the ssid exists, compare the hash values
+                if row[0] == 1:
+                    cursor.execute("UPDATE hg_integrity SET refresh = 0, db_hash = ? WHERE ssid=?", (db_hash, hg_ssid))
+                    conn.commit()
+                    return json.dumps({"status" : "good"})
+                else:
+                    return json.dumps({"status" : "Failed"})
+            else:
+                cursor.execute("INSERT INTO hg_integrity (ssid, db_hash, refresh) VALUES (?, ?, 0)", (hg_ssid, db_hash))
                 conn.commit()
                 return json.dumps({"status" : "good"})
-            else:
-                return json.dumps({"status" : "Failed"})
-        else:
-            cursor.execute("INSERT INTO hg_integrity (ssid, db_hash, refresh) VALUES (?, ?, 0)", (hg_ssid, db_hash))
-            conn.commit()
-            return json.dumps({"status" : "good"})
+        except Exception as e:
+            print(e)
+            return json.dumps({"status" : "Failed"})
             
     
     def main(self):
@@ -108,21 +114,25 @@ class WatssDogHub():
         server_socket.listen(2)
         
         while True:
-            conn, address = server_socket.accept()  # accept new connection
-            print("Connection from: " + str(address))
+            try:
+                conn, address = server_socket.accept()  # accept new connection
+                print("Connection from: " + str(address))
+                
+                # receive data stream. it won't accept data packet greater than 1024 bytes
+                data = conn.recv(1024).decode()
+                
+                data = json.loads(data)
+                
+                if data["protocol"] == "db_check":
+                    server_response = self.check_database_hash_mach(data["hg_ssid"], data["db_hash"])
+                if data["protocol"] == "db_hash_report":
+                    server_response = self.get_hash_report(data["hg_ssid"], data["db_hash"])
             
-            # receive data stream. it won't accept data packet greater than 1024 bytes
-            data = conn.recv(1024).decode()
-            
-            data = json.loads(data)
-            
-            if data["protocol"] == "db_check":
-                server_response = self.check_database_hash_mach(data["hg_ssid"], data["db_hash"])
-            if data["protocol"] == "db_hash_report":
-                server_response = self.get_hash_report(data["hg_ssid"], data["db_hash"])
-        
-            conn.send(server_response.encode())  # send data to the client
-            conn.close()  # close the connection
+                conn.send(server_response.encode())  # send data to the client
+            except Exception as e:
+                print(e)
+            finally:
+                conn.close()  # close the connection
 
 
 
