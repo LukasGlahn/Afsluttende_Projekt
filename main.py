@@ -2,6 +2,9 @@ import subprocess
 from system_file_checker import SystemFileChecker
 from firewall import FireWallChecker
 import sys
+import socket
+import hashlib
+import json
 
 
 ## Loging fungtion using subprosess to make a log entry if a inconsistensy is found
@@ -40,7 +43,121 @@ class System_Checker():
         print(info, " at level ", loging_score)
         ## Warning about a insdent to the systemlog to be send to server
         # If in testing keep comented out wnen not needed to stop spam to watts 
-        log(info, loging_score)
+        print(info)
+        #log(info, loging_score)
+    
+    def get_file_hase(self, file):
+        # Compute the hash of a file using the specified algorithm.
+        hash_func = hashlib.new('sha256')
+        # Open the file in binary mode
+        
+        with open(file, 'rb') as file:
+            # Read the file in chunks of 8192 bytes
+            while chunk := file.read(8192):
+                hash_func.update(chunk)
+        
+        return hash_func.hexdigest()
+    
+    def get_ssid(self):
+        with open("/mnt/config/hems_*","r") as file:
+            ids = file.read()
+            ids = ids.split("\n")
+            ssid = ids[0]
+            return ssid
+      
+    #####################################################################################
+    ## Self reporting
+    
+    def cross_check_database(self):
+        # Get the sha256 hash of the database
+        db_hash = self.get_file_hase(self.database)
+        
+        # Get the ssid of the controler
+        hg_ssid = self.get_ssid()
+        
+        
+        host = "127.0.0.1"  # Loopback adress to hit the docker container
+        port = 5050  # socket server port number
+
+        client_socket = socket.socket()  # instantiate
+        client_socket.connect((host, port))  # connect to the server
+
+        # Info for the server
+        devise_info = {
+            "protocol" : "db_check",
+            "hg_ssid" : hg_ssid,
+            "db_hash" : db_hash
+        }
+        
+        # Make the dir in to a json string for eazy sending
+        message = json.dumps(devise_info)
+
+        
+        client_socket.send(message.encode())  # send message
+        data = client_socket.recv(1024).decode()  # receive response
+
+        response = json.loads(data)
+        
+        client_socket.close()  # close the connection
+        
+        # Chesk the response if good to indicate that the hash mached
+        if response["status"] == "good":
+            return "good"
+        elif response["status"] == "ssid not in db":
+            self.report_db_hash()
+            return "updated db hash"
+        elif response["status"] == "update":
+            self.report_db_hash()
+            return "updated db hash"
+        else:
+            print(response)
+            self.warn("database dose not mach", 4)
+            return None
+
+    
+    def report_db_hash(self):
+        # Get the sha256 hash of the database
+        db_hash = self.get_file_hase(self.database)
+        
+        # Get the ssid of the controler
+        hg_ssid = self.get_ssid()
+        
+        
+        host = "127.0.0.1"  # Loopback adress to hit the docker container
+        port = 5050  # socket server port number
+
+        client_socket = socket.socket()  # instantiate
+        client_socket.connect((host, port))  # connect to the server
+
+        # Info for the server
+        devise_info = {
+            "protocol" : "db_hash_report",
+            "hg_ssid" : hg_ssid,
+            "db_hash" : db_hash
+        }
+        
+        # Make the dir in to a json string for eazy sending
+        message = json.dumps(devise_info)
+
+        
+        client_socket.send(message.encode())  # send message
+        data = client_socket.recv(1024).decode()  # receive response
+
+        response = json.loads(data)
+        
+        client_socket.close()  # close the connection
+        
+        # Chesk the response if good to indicate that the hash mached
+        if response["status"] == "good":
+            print("good")
+            return "good"
+        else:
+            self.warn("Not alowed", 4)
+            print("Not alowed")
+            return None
+    
+    #####################################################################################
+    ## Scan types
     
     # build all databases for the system to fungtion
     def build_database(self):
@@ -54,8 +171,9 @@ class System_Checker():
     ## Full scan weary resouse intesiv and takes a while to do
     def full_scan(self):
         ## Check if the database exsists
-        if self.file_exsists():
-            pass
+        if self.file_exsists(self.database):
+            #check that the database is unchanged
+            system_checker.cross_check_database()
         else:
             self.build_database()
             return
@@ -89,7 +207,7 @@ class System_Checker():
 if __name__ == "__main__":
     system_checker = System_Checker()
 
-
+    #system_checker.cross_check_database()
     arguments = sys.argv
     
     scan_type = None

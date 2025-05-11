@@ -4,8 +4,8 @@ WORKDIR /wattsdog_conector
 
 COPY ./main.py .
 
-ENV PORT=5050
+ENV PORT=5125
 
-EXPOSE 5050
+EXPOSE 5125
 
 CMD [ "python3", "main.py" ]
