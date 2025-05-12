@@ -9,13 +9,15 @@ class Proxy():
     def __init__(self, server):
         self.server = server
     
-    def check_database_mach(self, hg_ssid, db_hash):
+    def check_database_mach(self, hg_ssid, db_hash, structure_hash):
         try:
             # Check if the ssid and db_hash are valid
             if re.match(r"^[a-zA-Z0-9_]+$", hg_ssid) is None and len(hg_ssid) == 64:
-                return "bad ssid"
+                return json.dumps({"status" : "bad ssid"})
             if re.match(r"^[a-zA-Z0-9_]+$", db_hash) is None:
-                return "bad db_hash"
+                return json.dumps({"status" : "bad db_hash"})
+            if re.match(r"^[a-zA-Z0-9_]+$", structure_hash) is None:
+                return json.dumps({"status" : "bad structure_hash"})
             
             host = self.server  # Loopback address to hit the docker container
             port = 5125  # socket server port number
@@ -34,7 +36,8 @@ class Proxy():
             devise_info = {
                 "protocol": "db_check",
                 "hg_ssid": hg_ssid,
-                "db_hash": db_hash
+                "db_hash": db_hash,
+                "structure_hash" : structure_hash
             }
             
             # Make the dir into a JSON string for easy sending
@@ -59,13 +62,15 @@ class Proxy():
             print(f"failed to contact server: {e}")
             return json.dumps({"status": "Failed"})
     
-    def db_hash_report(self, hg_ssid, db_hash):
+    def db_hash_report(self, hg_ssid, db_hash, structure_hash):
         try:
             # Check if the ssid and db_hash are valid
             if re.match(r"^[a-zA-Z0-9_]+$", hg_ssid) is None and len(hg_ssid) == 64:
-                return "bad ssid"
+                return json.dumps({"status" : "bad ssid"})
             if re.match(r"^[a-zA-Z0-9_]+$", db_hash) is None:
-                return "bad db_hash"
+                return json.dumps({"status" : "bad db_hash"})
+            if re.match(r"^[a-zA-Z0-9_]+$", structure_hash) is None:
+                return json.dumps({"status" : "bad structure_hash"})
             
             host = self.server  # Loopback address to hit the docker container
             port = 5125  # socket server port number
@@ -84,7 +89,8 @@ class Proxy():
             devise_info = {
                 "protocol": "db_hash_report",
                 "hg_ssid": hg_ssid,
-                "db_hash": db_hash
+                "db_hash": db_hash,
+                "structure_hash" : structure_hash
             }
             
             # Make the dir into a JSON string for easy sending
@@ -95,7 +101,6 @@ class Proxy():
 
             response = json.loads(data)
             client_socket.close()  # close the connection
-            
             # Check the response if good to indicate that the hash matched
             if response["status"] == "good":
                 return json.dumps({"status": "good"})
@@ -128,10 +133,12 @@ class Proxy():
                 
                 data = json.loads(data)
                 
+                print(data)
+                
                 if data["protocol"] == "db_check":
-                    server_response = self.check_database_mach(data["hg_ssid"], data["db_hash"])
+                    server_response = self.check_database_mach(data["hg_ssid"], data["db_hash"], data["structure_hash"])
                 if data["protocol"] == "db_hash_report":
-                    server_response = self.db_hash_report(data["hg_ssid"], data["db_hash"])
+                    server_response = self.db_hash_report(data["hg_ssid"], data["db_hash"], data["structure_hash"])
                 
                 
                 conn.send(server_response.encode())  # send data to the client
@@ -140,6 +147,7 @@ class Proxy():
                 print(e)
             
             finally:
+                print("good end")
                 conn.close()  # close the connection
 
 

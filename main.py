@@ -72,6 +72,7 @@ class System_Checker():
         # Get the sha256 hash of the database
         db_hash = self.get_file_hase(self.database)
         
+        structure_hash = self.get_file_hase("structure.json")
         # Get the ssid of the controler
         hg_ssid = self.get_ssid()
         
@@ -86,7 +87,8 @@ class System_Checker():
         devise_info = {
             "protocol" : "db_check",
             "hg_ssid" : hg_ssid,
-            "db_hash" : db_hash
+            "db_hash" : db_hash,
+            "structure_hash" : structure_hash
         }
         
         # Make the dir in to a json string for eazy sending
@@ -119,6 +121,8 @@ class System_Checker():
         # Get the sha256 hash of the database
         db_hash = self.get_file_hase(self.database)
         
+        structure_hash = self.get_file_hase("structure.json")
+        
         # Get the ssid of the controler
         hg_ssid = self.get_ssid()
         
@@ -133,7 +137,8 @@ class System_Checker():
         devise_info = {
             "protocol" : "db_hash_report",
             "hg_ssid" : hg_ssid,
-            "db_hash" : db_hash
+            "db_hash" : db_hash,
+            "structure_hash" : structure_hash
         }
         
         # Make the dir in to a json string for eazy sending
@@ -166,6 +171,8 @@ class System_Checker():
         
         # fille te database with all files requerd
         self.system_file_checker.build_system_db()
+        
+        self.report_db_hash()
         
     
     ## Full scan weary resouse intesiv and takes a while to do

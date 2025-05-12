@@ -17,14 +17,15 @@ class WatssDogHub():
 
         # Create the hg_integrity table if it doesn't exist
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS hg_integrity (
-            id      INTEGER     PRIMARY KEY AUTOINCREMENT
-                                UNIQUE
-                                NOT NULL,
-            ssid    TEXT        UNIQUE
-                                NOT NULL,
-            db_hash TEXT,
-            refresh INTEGER (2) 
+            CREATE TABLE hg_integrity (
+            id             INTEGER     PRIMARY KEY AUTOINCREMENT
+                                    UNIQUE
+                                    NOT NULL,
+            ssid           TEXT        UNIQUE
+                                    NOT NULL,
+            db_hash        TEXT,
+            structure_hash TEXT,
+            refresh        INTEGER (2) 
         );
         ''')
 
@@ -33,13 +34,15 @@ class WatssDogHub():
         conn.close()
     
     
-    def check_database_hash_mach(self, hg_ssid, db_hash):
+    def check_database_hash_mach(self, hg_ssid, db_hash, structure_hash):
         try:
             # Input sanitation
             if re.match(r"^[a-zA-Z0-9_]+$", hg_ssid) is None and len(hg_ssid) == 64:
                 return json.dumps({"status" : "bad ssid"})
             if re.match(r"^[a-zA-Z0-9_]+$", db_hash) is None:
                 return json.dumps({"status" : "bad db_hash"})
+            if re.match(r"^[a-zA-Z0-9_]+$", structure_hash) is None:
+                return json.dumps({"status" : "bad structure_hash"})
             
             # Connect to the SQLite database (or create it if it doesn't exist)
             conn = sqlite3.connect(self.database)
@@ -50,10 +53,12 @@ class WatssDogHub():
             row = cursor.fetchone()
 
             if row:
-                if row[3] == 1:
+                if row[4] == 1:
                     return json.dumps({"status" : "update"})
                 # If the ssid exists, compare the hash values
                 elif row[2] == db_hash:
+                    return json.dumps({"status" : "good"})
+                elif row[2] == structure_hash:
                     return json.dumps({"status" : "good"})
                 else:
                     return json.dumps({"status" : "hash did not mach"})
@@ -64,13 +69,15 @@ class WatssDogHub():
             return json.dumps({"status" : "hash did not mach"})
     
     
-    def get_hash_report(self, hg_ssid, db_hash):
+    def get_hash_report(self, hg_ssid, db_hash, structure_hash):
         try:
             #input sanitation
             if re.match(r"^[a-zA-Z0-9_]+$", hg_ssid) is None and len(hg_ssid) == 64:
                 return json.dumps({"status" : "bad ssid"})
             if re.match(r"^[a-zA-Z0-9_]+$", db_hash) is None:
                 return json.dumps({"status" : "bad db_hash"})
+            if re.match(r"^[a-zA-Z0-9_]+$", structure_hash) is None:
+                return json.dumps({"status" : "bad structure_hash"})
             
             # Connect to the SQLite database (or create it if it doesn't exist)
             conn = sqlite3.connect(self.database)
@@ -83,13 +90,13 @@ class WatssDogHub():
             if row:
                 # If the ssid exists, compare the hash values
                 if row[0] == 1:
-                    cursor.execute("UPDATE hg_integrity SET refresh = 0, db_hash = ? WHERE ssid=?", (db_hash, hg_ssid))
+                    cursor.execute("UPDATE hg_integrity SET refresh = 0, db_hash = ?, structure_hash = ? WHERE ssid=?", (db_hash, structure_hash, hg_ssid))
                     conn.commit()
                     return json.dumps({"status" : "good"})
                 else:
                     return json.dumps({"status" : "Failed"})
             else:
-                cursor.execute("INSERT INTO hg_integrity (ssid, db_hash, refresh) VALUES (?, ?, 0)", (hg_ssid, db_hash))
+                cursor.execute("INSERT INTO hg_integrity (ssid, db_hash, refresh, structure_hash) VALUES (?, ?, ?, 0)", (hg_ssid, db_hash, structure_hash))
                 conn.commit()
                 return json.dumps({"status" : "good"})
         except Exception as e:
@@ -124,10 +131,12 @@ class WatssDogHub():
                 data = json.loads(data)
                 
                 if data["protocol"] == "db_check":
-                    server_response = self.check_database_hash_mach(data["hg_ssid"], data["db_hash"])
+                    print("db_check",data)
+                    server_response = self.check_database_hash_mach(data["hg_ssid"], data["db_hash"], data["structure_hash"])
                 if data["protocol"] == "db_hash_report":
-                    server_response = self.get_hash_report(data["hg_ssid"], data["db_hash"])
-            
+                    print("db_hash_report",data)
+                    server_response = self.get_hash_report(data["hg_ssid"], data["db_hash"], data["structure_hash"])
+
                 conn.send(server_response.encode())  # send data to the client
             except Exception as e:
                 print(e)

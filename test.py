@@ -7,14 +7,7 @@ import json
 
 
 ## Loging fungtion using subprosess to make a log entry if a inconsistensy is found
-def log(info,priority=7):
-    identifier = "Watts Dog"
 
-    subprocess.run(
-        ["systemd-cat", "--identifier=" + identifier, f"--priority={priority}"],
-        input=info.encode(),
-        check=True
-    )
 
 #####################################################################################
 # Main class to handel all info
@@ -49,6 +42,7 @@ class System_Checker():
         # Get the sha256 hash of the database
         db_hash = self.get_file_hase(self.database)
         
+        structure_hash = self.get_file_hase("structure.json")
         # Get the ssid of the controler
         hg_ssid = self.get_ssid()
         
@@ -63,7 +57,8 @@ class System_Checker():
         devise_info = {
             "protocol" : "db_check",
             "hg_ssid" : hg_ssid,
-            "db_hash" : db_hash
+            "db_hash" : db_hash,
+            "structure_hash" : structure_hash
         }
         
         # Make the dir in to a json string for eazy sending
@@ -96,6 +91,8 @@ class System_Checker():
         # Get the sha256 hash of the database
         db_hash = self.get_file_hase(self.database)
         
+        structure_hash = self.get_file_hase("structure.json")
+        
         # Get the ssid of the controler
         hg_ssid = self.get_ssid()
         
@@ -110,7 +107,8 @@ class System_Checker():
         devise_info = {
             "protocol" : "db_hash_report",
             "hg_ssid" : hg_ssid,
-            "db_hash" : db_hash
+            "db_hash" : db_hash,
+            "structure_hash" : structure_hash
         }
         
         # Make the dir in to a json string for eazy sending
