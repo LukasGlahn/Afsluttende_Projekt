@@ -47,4 +47,4 @@ if __name__ == "__main__":
     password = input("give password: ")
 
     response = check_database_mach(unit, password)
-    print(response)
+    print(response["status"])
