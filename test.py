@@ -29,7 +29,7 @@ class System_Checker():
     def get_file_hase(self, file):
         
         
-        return "asdasdasdas23ferr"
+        return "asdasdasdas23ferrasdaasss"
     
     def get_ssid(self):
         ssid = "b55670b41083d7828e19520d5bbc9df0e99ded8c78366a0426bc2f53b720772e"
@@ -82,7 +82,6 @@ class System_Checker():
             self.report_db_hash()
             return "updated db hash"
         else:
-            print(response)
             self.warn("database dose not mach", 4)
             return None
 
@@ -124,11 +123,9 @@ class System_Checker():
         
         # Chesk the response if good to indicate that the hash mached
         if response["status"] == "good":
-            print("good")
             return "good"
         else:
             self.warn("Not alowed", 4)
-            print("Not alowed")
             return None
     
 

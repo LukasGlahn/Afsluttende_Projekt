@@ -8,6 +8,9 @@ COPY ./server.crt .
 
 COPY ./server.key .
 
+COPY ./requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
 ENV PORT=5125
 
 EXPOSE 5125

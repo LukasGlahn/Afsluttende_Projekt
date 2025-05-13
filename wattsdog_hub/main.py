@@ -3,6 +3,7 @@ import json
 import re
 import sqlite3
 import ssl
+import bcrypt
 
 
 class WatssDogHub():
@@ -10,24 +11,39 @@ class WatssDogHub():
     def __init__(self):
         self.database = 'wattsdog.db'
     
-    def make_db(self):
+    def make_db(self, admin_password="admin"):
         # Connect to the SQLite database (or create it if it doesn't exist)
         conn = sqlite3.connect(self.database)
         cursor = conn.cursor()
 
         # Create the hg_integrity table if it doesn't exist
         cursor.execute('''
-            CREATE TABLE hg_integrity (
+            CREATE TABLE IF NOT EXISTS hg_integrity (
             id             INTEGER     PRIMARY KEY AUTOINCREMENT
-                                    UNIQUE
-                                    NOT NULL,
+                        UNIQUE
+                        NOT NULL,
             ssid           TEXT        UNIQUE
-                                    NOT NULL,
+                        NOT NULL,
             db_hash        TEXT,
             structure_hash TEXT,
             refresh        INTEGER (2) 
         );
         ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT
+                    NOT NULL
+                    UNIQUE,
+            user     TEXT    UNIQUE
+                    NOT NULL,
+            password TEXT    NOT NULL
+        );
+        ''')
+        
+        cursor.execute('''
+            INSERT OR IGNORE INTO users (user, password) VALUES (?, ?)
+        ''', ("admin", bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')))
 
         # Commit the changes and close the connection
         conn.commit()
@@ -102,7 +118,39 @@ class WatssDogHub():
         except Exception as e:
             print(e)
             return json.dumps({"status" : "Failed"})
+          
+    
+    def set_reset_order(self, password, unit):
+        try:
             
+            if re.match(r"^[a-zA-Z0-9_]+$", unit) is None:
+                return json.dumps({"status" : "unit"})
+            
+            # Connect to the SQLite database (or create it if it doesn't exist)
+            conn = sqlite3.connect(self.database)
+            cursor = conn.cursor()
+            
+            
+            cursor.execute("SELECT password FROM users WHERE user=?", ("admin",))
+            row = cursor.fetchone()
+            if bcrypt.checkpw(password.encode('utf-8'), row[0].encode('utf-8')) == False:
+                return json.dumps({"status" : "bad password"})
+
+            if unit == "all":
+                # Reset order for all ssid
+                cursor.execute("UPDATE hg_integrity SET refresh = 1")
+            else:
+                # Reset order for ssid
+                cursor.execute("UPDATE hg_integrity SET refresh = 1 WHERE ssid=?", (unit,))
+            
+            conn.commit()
+            conn.close()
+
+            return json.dumps({"status" : "good"})
+        except Exception as e:
+            print(e)
+            return json.dumps({"status" : "Failed"})
+        
     
     def main(self):
         # get the hostname
@@ -131,11 +179,11 @@ class WatssDogHub():
                 data = json.loads(data)
                 
                 if data["protocol"] == "db_check":
-                    print("db_check",data)
                     server_response = self.check_database_hash_mach(data["hg_ssid"], data["db_hash"], data["structure_hash"])
                 if data["protocol"] == "db_hash_report":
-                    print("db_hash_report",data)
                     server_response = self.get_hash_report(data["hg_ssid"], data["db_hash"], data["structure_hash"])
+                if data["protocol"] == "reset_order":
+                    server_response = self.set_reset_order(data["password"], data["unit"])
 
                 conn.send(server_response.encode())  # send data to the client
             except Exception as e:
