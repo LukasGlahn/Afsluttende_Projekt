@@ -1,0 +1,12 @@
+/etc/mtab
+/mnt/storage1/influxdb2/data/engine/data
+/mnt/storage1/influxdb2/data/engine/wal
+/proc
+/run
+/srv
+/sys
+/tmp
+/var/lib/docker/overlay2
+/var/lib/docker/image/overlay2/layerdb/sha256
+/var/lib/docker/image/overlay2/imagedb/content/sha256
+/var/lib/containerd/io.containerd.content.v1.content/blobs/sha256

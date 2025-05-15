@@ -85,7 +85,7 @@
     "/root": {
         "default": {
             "checks": "hpu",
-            "severity": 3
+            "severity": 4
         },
         "exceptions": {},
         "file_exceptions": {}
