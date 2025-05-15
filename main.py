@@ -24,7 +24,7 @@ class System_Checker():
     def __init__(self):
         self.database = "database1.db"
         self.system_file_checker = SystemFileChecker(self.database)
-        self.fire_wall_checker = FireWallChecker()
+        self.fire_wall_checker = FireWallChecker(self.database)
         
     def file_exsists(self,file):
         # check if the file exsists in the system

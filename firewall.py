@@ -1,56 +1,73 @@
 import subprocess
+import sqlite3
 
 
 class FireWallChecker():
-    def __init__(self):
+    def __init__(self, database):
         self.ipv4 = self.run_command(['sudo','iptables','-S'])
         self.ipv6 = self.run_command(['sudo','ip6tables','-S'])
         
-        self.rules6 = """
--P INPUT ACCEPT
--P FORWARD ACCEPT
--P OUTPUT ACCEPT
--N DOCKER-USER
-"""
+        self.database = database
         
-        self.rules = """
--P INPUT DROP
--P FORWARD DROP
--P OUTPUT ACCEPT
--N DOCKER
--N DOCKER-BRIDGE
--N DOCKER-CT
--N DOCKER-FORWARD
--N DOCKER-ISOLATION-STAGE-1
--N DOCKER-ISOLATION-STAGE-2
--N DOCKER-USER
--A INPUT -i lo -j ACCEPT
--A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
--A INPUT -p udp -m udp --dport 5353 -j ACCEPT
--A INPUT -m pkttype --pkt-type multicast -j ACCEPT
--A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
--A INPUT -p tcp -m tcp --dport 868 -j ACCEPT
--A INPUT -s 172.0.0.0/8 -p tcp -m tcp --dport 50051 -j ACCEPT
--A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
--A FORWARD -j DOCKER-USER
--A FORWARD -j DOCKER-FORWARD
--A DOCKER ! -i br-63af15588383 -o br-63af15588383 -j DROP
--A DOCKER ! -i docker0 -o docker0 -j DROP
--A DOCKER-BRIDGE -o br-63af15588383 -j DOCKER
--A DOCKER-BRIDGE -o docker0 -j DOCKER
--A DOCKER-CT -o br-63af15588383 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
--A DOCKER-CT -o docker0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
--A DOCKER-FORWARD -j DOCKER-CT
--A DOCKER-FORWARD -j DOCKER-ISOLATION-STAGE-1
--A DOCKER-FORWARD -j DOCKER-BRIDGE
--A DOCKER-FORWARD -i br-63af15588383 -j ACCEPT
--A DOCKER-FORWARD -i docker0 -j ACCEPT
--A DOCKER-ISOLATION-STAGE-1 -i br-63af15588383 ! -o br-63af15588383 -j DOCKER-ISOLATION-STAGE-2
--A DOCKER-ISOLATION-STAGE-1 -i docker0 ! -o docker0 -j DOCKER-ISOLATION-STAGE-2
--A DOCKER-ISOLATION-STAGE-2 -o docker0 -j DROP
--A DOCKER-ISOLATION-STAGE-2 -o br-63af15588383 -j DROP
--A DOCKER-USER -j RETURN
-"""
+        # Try to load rules from the database if it exists and has both rulesets
+        conn = sqlite3.connect(self.database)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT name FROM sqlite_master WHERE type='table' AND name='firewall_rules';
+        """)
+        table_exists = cursor.fetchone()
+        rules_loaded = False
+
+        if table_exists:
+            cursor.execute("SELECT version, rules FROM firewall_rules")
+            rows = cursor.fetchall()
+            rules_dict = {row[0]: row[1] for row in rows}
+            if "ip4" in rules_dict and "ip6" in rules_dict:
+                self.rules = rules_dict["ip4"]
+                self.rules6 = rules_dict["ip6"]
+                rules_loaded = True
+
+        if not rules_loaded:
+            print("No rules found in the database or both rulesets are not present. Using current system rules.")
+            self.rules = self.ipv4
+            self.rules6 = self.ipv6
+            self.duild_db()
+
+        conn.close()
+
+    def duild_db(self):
+        # Connect to the SQLite database (or create it if it doesn't exist)
+        ipv4 = self.run_command(['sudo','iptables','-S'])
+        ipv6 = self.run_command(['sudo','ip6tables','-S'])
+        
+        conn = sqlite3.connect(self.database)
+        cursor = conn.cursor()
+
+        # Create a table to store the firewall rules
+        # Create the table only if it doesn't exist
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS firewall_rules (
+            id      INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+            version TEXT    NOT NULL UNIQUE,
+            rules   TEXT    NOT NULL
+            );
+        ''')
+        
+        # Insert the rules into the table
+        cursor.execute(
+            "INSERT OR REPLACE INTO firewall_rules (version, rules) VALUES (?, ?)",
+            ("ip4", ipv4)
+        )
+        cursor.execute(
+            "INSERT OR REPLACE INTO firewall_rules (version, rules) VALUES (?, ?)",
+            ("ip6", ipv6)
+        )
+        
+        conn.commit()
+        conn.close()
+
+        
+    
     def run_command(self,command):
         try:
             result = subprocess.run(
@@ -180,6 +197,6 @@ class FireWallChecker():
 
 
 if __name__ == "__main__":
-    firewalchecker = FireWallChecker()
+    firewalchecker = FireWallChecker("database1.db")
     print(firewalchecker.check_system_rules())
 
