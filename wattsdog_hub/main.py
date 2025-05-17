@@ -4,6 +4,7 @@ import re
 import sqlite3
 import ssl
 import bcrypt
+import os
 
 
 class WatssDogHub():
@@ -196,6 +197,7 @@ class WatssDogHub():
 
 if __name__ == "__main__":
     # Example usage
+    admin_password = os.environ.get("ADMIN_PASSWORD", "admin")
     hub = WatssDogHub()
-    hub.make_db()
+    hub.make_db(admin_password=admin_password)
     hub.main()

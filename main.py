@@ -1,10 +1,22 @@
 import subprocess
 from system_file_checker import SystemFileChecker
 from firewall import FireWallChecker
+from av import VirusScaner
 import sys
 import socket
 import hashlib
 import json
+import os
+import sqlite3
+
+
+# fungtion to return the curent folder path to the file curently running, 
+# takes one argument to append eanything at the end of the returned string like a filename
+def get_folder_path(append=''):
+    # Get the script that was initially executed
+    script_path = os.path.abspath(sys.argv[0])
+    folder_path = os.path.dirname(script_path)
+    return os.path.join(folder_path, append)
 
 
 ## Loging fungtion using subprosess to make a log entry if a inconsistensy is found
@@ -22,16 +34,30 @@ def log(info,priority=7):
 
 class System_Checker():
     def __init__(self):
-        self.database = "database1.db"
+        self.database = get_folder_path("database1.db")
         self.system_file_checker = SystemFileChecker(self.database)
         self.fire_wall_checker = FireWallChecker(self.database)
+        self.virus_scaner = VirusScaner()
         
-    def file_exsists(self,file):
-        # check if the file exsists in the system
+    def db_exsists(self, file):
+        # Check if the file exists and is not empty
+        if not os.path.isfile(file):
+            return False
+        if os.path.getsize(file) == 0:
+            return False
+        # Check if the required tables exist in the SQLite database
         try:
-            with open(file, 'r') as f:
-                return True
-        except FileNotFoundError:
+            conn = sqlite3.connect(file)
+            cursor = conn.cursor()
+            # Check for 'file_hashes' table
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='file_hashes';")
+            file_hashes_exists = cursor.fetchone() is not None
+            # Check for 'firewall_rules' table
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='firewall_rules';")
+            firewall_rules_exists = cursor.fetchone() is not None
+            conn.close()
+            return file_hashes_exists and firewall_rules_exists
+        except Exception:
             return False
     
     def warn(self, info, severity):
@@ -59,10 +85,8 @@ class System_Checker():
         return hash_func.hexdigest()
     
     def get_ssid(self):
-        with open("/mnt/config/hems_*","r") as file:
-            ids = file.read()
-            ids = ids.split("\n")
-            ssid = ids[0]
+        with open("/mnt/config/hems_registration_id","r") as file:
+            ssid = file.read()
             return ssid
       
     #####################################################################################
@@ -102,18 +126,22 @@ class System_Checker():
         
         client_socket.close()  # close the connection
         
-        # Chesk the response if good to indicate that the hash mached
+        # Check the response if good to indicate that the Hash mached
         if response["status"] == "good":
             return "good"
         elif response["status"] == "ssid not in db":
             self.report_db_hash()
             return "updated db hash"
         elif response["status"] == "update":
+            print("update")
+            # remove the old database
+            os.remove(self.database)
+            self.build_database()
             self.report_db_hash()
             return "updated db hash"
         else:
             print(response)
-            self.warn("database dose not mach", 4)
+            self.warn("Database does not match", 4)
             return None
 
     
@@ -172,37 +200,54 @@ class System_Checker():
         # fille te database with all files requerd
         self.system_file_checker.build_system_db()
         
+        self.fire_wall_checker.duild_db()
+        
         self.report_db_hash()
         
     
     ## Full scan weary resouse intesiv and takes a while to do
     def full_scan(self):
         ## Check if the database exsists
+        if self.db_exsists(self.database):
+            #check that the database is unchanged
+            system_checker.cross_check_database()
+        else:
+            print("no db building first setup")
+            self.build_database()
+            return
+        
+        print("full scan starting")
+        ## Scan the system
+        firewall_vialations = self.fire_wall_checker.check_system_rules()
+        
+        changed_files = self.system_file_checker.check_system_for_changes()
+        
+        viruses_found = self.virus_scaner.scan_all_directories()
+        
+        ## warn about all found problems
+        # changed_files
+        for file_vialation in changed_files:
+            for vialation in file_vialation["vialations"]:
+                self.warn(vialation["file content"], vialation["severity"])
+        
+        # firewall_vialations
+        for vialation in firewall_vialations:
+            self.warn(vialation["info"], vialation["severity"])
+            
+        # viruses_found
+        for vialation in viruses_found:
+            self.warn(vialation["info"], vialation["severity"])
+    
+    ## smaller scan that can be run offen as it dos not take to much too run
+    def small_scan(self):
         if self.file_exsists(self.database):
             #check that the database is unchanged
             system_checker.cross_check_database()
         else:
             self.build_database()
             return
-        
         ## Scan the system
-        firewall_vialations = self.fire_wall_checker.check_difrense()
-        
-        changed_files = self.system_file_checker.check_system_for_changes()
-        
-        ## warn about all found problems
-        # changed_files
-        for vialation in changed_files:
-            self.warn(vialation["file content"], vialation["severity"])
-        
-        # firewall_vialations
-        for vialation in firewall_vialations:
-            self.warn(vialation["info"], vialation["severity"])
-    
-    ## smaller scan that can be run offen as it dos not take to much too run
-    def small_scan(self):
-        ## Scan the system
-        firewall_vialations = self.fire_wall_checker.check_difrense()
+        firewall_vialations = self.fire_wall_checker.check_system_rules()
 
         # firewall_vialations
         for vialation in firewall_vialations:

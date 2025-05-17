@@ -4,6 +4,11 @@ This is a HIDS (Hardware Intrution Detection System) Build for watts to keep a t
 ## Setup 
 Setup methots for the system
 ### Normal setup 
+#### Setup Wattsdog_hub
+
+#### Setup Wattsdog_conecter
+
+#### checking cronjob is installed
 check if cron is installed
 ```shell
 dpkg -l cron 

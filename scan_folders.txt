@@ -1,6 +1,8 @@
 /etc/mtab
 /mnt/storage1/influxdb2/data/engine/data
 /mnt/storage1/influxdb2/data/engine/wal
+/mnt/storage1/edgeHub
+/mnt/storage1/edgeAgent
 /proc
 /run
 /srv
@@ -10,3 +12,5 @@
 /var/lib/docker/image/overlay2/layerdb/sha256
 /var/lib/docker/image/overlay2/imagedb/content/sha256
 /var/lib/containerd/io.containerd.content.v1.content/blobs/sha256
+/var/backups
+/var/lib/logrotate

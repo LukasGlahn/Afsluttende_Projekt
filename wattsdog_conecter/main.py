@@ -2,6 +2,7 @@ import socket
 import json
 import re
 import ssl
+import os
 
 
 class Proxy():
@@ -152,6 +153,7 @@ class Proxy():
 
 
 if __name__ == '__main__':
-    proxy = Proxy("127.0.0.1")
+    ip = os.environ.get("SERVER_IP", "127.0.0.1")
+    proxy = Proxy(ip)
     
     proxy.main()

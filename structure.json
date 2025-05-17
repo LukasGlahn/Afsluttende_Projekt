@@ -135,17 +135,17 @@
             "/mnt/storage1/influxdb2/data/engine/wal": {
                 "checks": "",
                 "severity": 0
+            },
+            "/mnt/storage1/edgeHub": {
+                "checks": "pu",
+                "severity": 3
+            },
+            "/mnt/storage1/edgeAgent": {
+                "checks": "pu",
+                "severity": 3
             }
         },
         "file_exceptions": {
-            "/mnt/storage1/edgeHub/000295.log": {
-                "checks": "pu",
-                "severity": 3
-            },
-            "/mnt/storage1/edgeAgent/000190.log": {
-                "checks": "pu",
-                "severity": 3
-            },
             "/mnt/storage1/edgeAgent/availability/avaliability.checkpoint": {
                 "checks": "pu",
                 "severity": 3
@@ -198,7 +198,7 @@
                 "checks": "pu",
                 "severity": 3
             },
-            "/var/log/journal": {
+            "/var/log": {
                 "checks": "pu",
                 "severity": 3
             },
@@ -213,6 +213,14 @@
             "/var/spool/anacron/": {
                 "checks": "hpu",
                 "severity": 5
+            },
+            "/var/backups": {
+                "checks": "pu",
+                "severity": 2
+            },
+            "/var/lib/logrotate": {
+                "checks": "",
+                "severity": 0
             }
         },
         "file_exceptions": {
@@ -235,6 +243,26 @@
             "/var/lib/fail2ban/fail2ban.sqlite3": {
                 "checks": "pu",
                 "severity": 3
+            },
+            "/var/mail/mail": {
+                "checks": "pu",
+                "severity": 3
+            },
+            "/var/lib/aziot/edged/gc/image_use": {
+                "checks": "pu",
+                "severity": 3
+            },
+            "/var/lib/clamav/daily.cld": {
+                "checks": "",
+                "severity": 0
+            },
+            "/var/lib/logrotate/status": {
+                "checks": "",
+                "severity": 0
+            },
+            "/var/lib/docker/image/overlay2/repositories.json": {
+                "checks": "",
+                "severity": 0
             }
         }
     }

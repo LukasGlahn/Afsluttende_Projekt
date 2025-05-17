@@ -3,12 +3,21 @@ import os
 import hashlib
 import stat
 import json
+import sys
+
+# fungtion to return the curent folder path to the file curently running, 
+# takes one argument to append eanything at the end of the returned string like a filename
+def get_folder_path(append=''):
+    # Get the script that was initially executed
+    script_path = os.path.abspath(sys.argv[0])
+    folder_path = os.path.dirname(script_path)
+    return os.path.join(folder_path, append)
 
 
 class SystemFileChecker:
     def __init__(self, database_name):
         self.db = database_name
-        with open("structure.json", "r") as file:
+        with open(get_folder_path("structure.json"), "r") as file:
             json_structure = file.read()
         self.structure = json.loads(json_structure)
 
@@ -272,6 +281,36 @@ class SystemFileChecker:
     
     def check_system_for_changes(self):
         # Check if the system has changed since the last check
+        
+        # Check if the database exists and has data
+        if not os.path.exists(self.db):
+            print(f"Database {self.db} does not exist. Creating a new one.")
+            self.build_db()
+            self.build_system_db()
+            return []
+
+        conn = sqlite3.connect(self.db)
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT COUNT(*) FROM file_hashes")
+            count = cursor.fetchone()[0]
+        except sqlite3.OperationalError as e:
+            if "no such table" in str(e):
+                print(f"Table file_hashes does not exist in {self.db}. Creating table.")
+                self.build_db()
+                self.build_system_db()
+                conn.close()
+                return []
+        conn.close()
+
+        if count < 1:
+            print(f"Database {self.db} exists but contains no data.")
+            self.build_system_db()
+            return []
+        
+        count = None
+        
+        # Load the structure from the JSON file
         structure = self.structure
         
         vialations = []

@@ -3,8 +3,9 @@
 import socket
 import ssl
 import json
+import getpass
 
-def check_database_mach(unit, password, server = "127.0.0.1"):
+def check_database_mach(unit, password, server = "192.168.0.61"):
     try:
         host = server  # Loopback address to hit the docker container
         port = 5125  # socket server port number
@@ -44,7 +45,7 @@ def check_database_mach(unit, password, server = "127.0.0.1"):
     
 if __name__ == "__main__":
     unit = input("give unit ssid or all for all ssids in system: ")
-    password = input("give password: ")
+    password = getpass.getpass("give password: ")
 
     response = check_database_mach(unit, password)
     print(response["status"])

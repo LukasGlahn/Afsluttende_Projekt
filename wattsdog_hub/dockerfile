@@ -12,6 +12,7 @@ COPY ./requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 ENV PORT=5125
+ENV ADMIN_PASSWORD=admin
 
 EXPOSE 5125
 

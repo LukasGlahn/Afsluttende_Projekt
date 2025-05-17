@@ -58,6 +58,7 @@ class VirusScaner:
                     })
             else:
                 print(f"No infected files found in {directory}.")
+        return vialations
     
     
 if __name__ == "__main__":
