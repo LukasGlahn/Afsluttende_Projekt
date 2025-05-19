@@ -14,3 +14,4 @@
 /var/lib/containerd/io.containerd.content.v1.content/blobs/sha256
 /var/backups
 /var/lib/logrotate
+/var/log

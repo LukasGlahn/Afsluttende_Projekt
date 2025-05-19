@@ -73,9 +73,7 @@ class WatssDogHub():
                 if row[4] == 1:
                     return json.dumps({"status" : "update"})
                 # If the ssid exists, compare the hash values
-                elif row[2] == db_hash:
-                    return json.dumps({"status" : "good"})
-                elif row[2] == structure_hash:
+                elif row[2] == db_hash or row[3] == structure_hash:
                     return json.dumps({"status" : "good"})
                 else:
                     return json.dumps({"status" : "hash did not mach"})
@@ -113,7 +111,7 @@ class WatssDogHub():
                 else:
                     return json.dumps({"status" : "Failed"})
             else:
-                cursor.execute("INSERT INTO hg_integrity (ssid, db_hash, refresh, structure_hash) VALUES (?, ?, ?, 0)", (hg_ssid, db_hash, structure_hash))
+                cursor.execute("INSERT INTO hg_integrity (ssid, db_hash, structure_hash, refresh) VALUES (?, ?, ?, 0)", (hg_ssid, db_hash, structure_hash))
                 conn.commit()
                 return json.dumps({"status" : "good"})
         except Exception as e:

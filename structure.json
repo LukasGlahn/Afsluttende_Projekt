@@ -199,8 +199,8 @@
                 "severity": 3
             },
             "/var/log": {
-                "checks": "pu",
-                "severity": 3
+                "checks": "",
+                "severity": 0
             },
             "/var/lib/aziot/edged/mnt": {
                 "checks": "pu",

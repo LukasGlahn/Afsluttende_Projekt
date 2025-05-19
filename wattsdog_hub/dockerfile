@@ -4,12 +4,9 @@ WORKDIR /wattsdog_conector
 
 COPY ./main.py .
 
-COPY ./server.crt .
-
-COPY ./server.key .
-
 COPY ./requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN openssl req -new -x509 -nodes -out server.crt -keyout server.key -subj "/CN=localhost"
 
 ENV PORT=5125
 ENV ADMIN_PASSWORD=admin

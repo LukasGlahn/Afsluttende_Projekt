@@ -137,7 +137,7 @@ class System_Checker():
             # remove the old database
             os.remove(self.database)
             self.build_database()
-            self.report_db_hash()
+            exit()
             return "updated db hash"
         else:
             print(response)
@@ -185,7 +185,7 @@ class System_Checker():
             print("good")
             return "good"
         else:
-            self.warn("Not alowed", 4)
+            self.warn("Not alowed", 3)
             print("Not alowed")
             return None
     

@@ -120,8 +120,15 @@ class SystemFileChecker:
         default_severity = sructure["default"]["severity"]
         # exseption states
         exceptions = sructure["exceptions"]
+
+        # Ensure self.database is always in file_exceptions
+        if self.db not in sructure["file_exceptions"]:
+            sructure["file_exceptions"][self.db] = {
+                "checks": "pu",
+                "severity": 5
+            }
         file_exceptions = sructure["file_exceptions"]
-        
+
         # Iterate over all files and folders in the folder
         for root, dirs, files in os.walk(folder):  # unpacking files for prosessing
             
@@ -182,7 +189,12 @@ class SystemFileChecker:
         print(folder)
         default_checks = sructure["default"]["checks"]
         default_severity = sructure["default"]["severity"]
-        
+        # exseption states
+        if self.db not in sructure["file_exceptions"]:
+            sructure["file_exceptions"][self.db] = {
+                "checks": "pu",
+                "severity": 5
+            }
         file_exceptions = sructure["file_exceptions"]
         exceptions = sructure["exceptions"]
         
