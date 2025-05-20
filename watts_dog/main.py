@@ -21,7 +21,7 @@ def get_folder_path(append=''):
 
 ## Loging fungtion using subprosess to make a log entry if a inconsistensy is found
 def log(info,priority=7):
-    identifier = "Watts Dog"
+    identifier = "Watts_Dog"
 
     subprocess.run(
         ["systemd-cat", "--identifier=" + identifier, f"--priority={priority}"],
@@ -95,8 +95,8 @@ class System_Checker():
     def cross_check_database(self):
         # Get the sha256 hash of the database
         db_hash = self.get_file_hase(self.database)
-        
-        structure_hash = self.get_file_hase("structure.json")
+        structure = get_folder_path("structure.json")
+        structure_hash = self.get_file_hase(structure)
         # Get the ssid of the controler
         hg_ssid = self.get_ssid()
         

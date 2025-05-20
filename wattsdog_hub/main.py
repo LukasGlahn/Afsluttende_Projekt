@@ -73,7 +73,7 @@ class WatssDogHub():
                 if row[4] == 1:
                     return json.dumps({"status" : "update"})
                 # If the ssid exists, compare the hash values
-                elif row[2] == db_hash or row[3] == structure_hash:
+                elif row[2] == db_hash and row[3] == structure_hash:
                     return json.dumps({"status" : "good"})
                 else:
                     return json.dumps({"status" : "hash did not mach"})
