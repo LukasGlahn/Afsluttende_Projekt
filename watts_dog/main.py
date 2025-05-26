@@ -10,8 +10,8 @@ import os
 import sqlite3
 
 
-# fungtion to return the curent folder path to the file curently running, 
-# takes one argument to append eanything at the end of the returned string like a filename
+# function to return the current folder path to the file currently running, 
+# takes one argument to append anything at the end of the returned string like a filename
 def get_folder_path(append=''):
     # Get the script that was initially executed
     script_path = os.path.abspath(sys.argv[0])
@@ -19,7 +19,7 @@ def get_folder_path(append=''):
     return os.path.join(folder_path, append)
 
 
-## Loging fungtion using subprosess to make a log entry if a inconsistensy is found
+## Logging function using subprocess to make a log entry if an inconsistency is found
 def log(info,priority=7):
     identifier = "Watts_Dog"
 
@@ -30,7 +30,7 @@ def log(info,priority=7):
     )
 
 #####################################################################################
-# Main class to handel all info
+# Main class to handle all info
 
 class System_Checker():
     def __init__(self):
@@ -67,8 +67,8 @@ class System_Checker():
             loging_score = 0
         
         print(info, " at level ", loging_score)
-        ## Warning about a insdent to the systemlog to be send to server
-        # If in testing keep comented out wnen not needed to stop spam to watts 
+        ## Warning about an incident to the system log to be sent to server
+        # If in testing, keep commented out when not needed to stop spam to watts 
         print(info)
         #log(info, loging_score)
     
@@ -97,11 +97,11 @@ class System_Checker():
         db_hash = self.get_file_hase(self.database)
         structure = get_folder_path("structure.json")
         structure_hash = self.get_file_hase(structure)
-        # Get the ssid of the controler
+        # Get the ssid of the controller
         hg_ssid = self.get_ssid()
         
         
-        host = "127.0.0.1"  # Loopback adress to hit the docker container
+        host = "127.0.0.1"  # Loopback address to hit the docker container
         port = 5050  # socket server port number
 
         client_socket = socket.socket()  # instantiate
@@ -115,7 +115,7 @@ class System_Checker():
             "structure_hash" : structure_hash
         }
         
-        # Make the dir in to a json string for eazy sending
+        # Make the dict into a json string for easy sending
         message = json.dumps(devise_info)
 
         
@@ -126,7 +126,7 @@ class System_Checker():
         
         client_socket.close()  # close the connection
         
-        # Check the response if good to indicate that the Hash mached
+        # Check the response if good to indicate that the Hash matched
         if response["status"] == "good":
             return "good"
         elif response["status"] == "ssid not in db":
@@ -151,11 +151,11 @@ class System_Checker():
         
         structure_hash = self.get_file_hase("structure.json")
         
-        # Get the ssid of the controler
+        # Get the ssid of the controller
         hg_ssid = self.get_ssid()
         
         
-        host = "127.0.0.1"  # Loopback adress to hit the docker container
+        host = "127.0.0.1"  # Loopback address to hit the docker container
         port = 5050  # socket server port number
 
         client_socket = socket.socket()  # instantiate
@@ -169,7 +169,7 @@ class System_Checker():
             "structure_hash" : structure_hash
         }
         
-        # Make the dir in to a json string for eazy sending
+        # Make the dict into a json string for easy sending
         message = json.dumps(devise_info)
 
         
@@ -180,7 +180,7 @@ class System_Checker():
         
         client_socket.close()  # close the connection
         
-        # Chesk the response if good to indicate that the hash mached
+        # Check the response if good to indicate that the hash matched
         if response["status"] == "good":
             print("good")
             return "good"
@@ -192,12 +192,12 @@ class System_Checker():
     #####################################################################################
     ## Scan types
     
-    # build all databases for the system to fungtion
+    # build all databases for the system to function
     def build_database(self):
         # make the database
         self.system_file_checker.build_db()
         
-        # fille te database with all files requerd
+        # fill the database with all files required
         self.system_file_checker.build_system_db()
         
         self.fire_wall_checker.duild_db()
@@ -205,9 +205,9 @@ class System_Checker():
         self.report_db_hash()
         
     
-    ## Full scan weary resouse intesiv and takes a while to do
+    ## Full scan, very resource intensive and takes a while to do
     def full_scan(self):
-        ## Check if the database exsists
+        ## Check if the database exists
         if self.db_exsists(self.database):
             #check that the database is unchanged
             system_checker.cross_check_database()
@@ -238,7 +238,7 @@ class System_Checker():
         for vialation in viruses_found:
             self.warn(vialation["info"], vialation["severity"])
     
-    ## smaller scan that can be run offen as it dos not take to much too run
+    ## Smaller scan that can be run often as it does not take too much to run
     def small_scan(self):
         if self.file_exsists(self.database):
             #check that the database is unchanged
@@ -278,4 +278,3 @@ if __name__ == "__main__":
         system_checker.build_database()
     else:
         exit()
-    
