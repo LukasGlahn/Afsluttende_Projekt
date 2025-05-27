@@ -1,0 +1,12 @@
+FROM python:3.12
+
+WORKDIR /wattsdog_conector
+
+COPY ./main.py .
+
+ENV PORT=5050
+ENV SERVERIP="127.0.0.1"
+
+EXPOSE 5050
+
+CMD [ "python3", "main.py" ]

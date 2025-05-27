@@ -1,0 +1,16 @@
+FROM python:3.12
+
+WORKDIR /wattsdog_conector
+
+COPY ./main.py .
+
+COPY ./requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+RUN openssl req -new -x509 -nodes -out server.crt -keyout server.key -subj "/CN=localhost"
+
+ENV PORT=5125
+ENV ADMIN_PASSWORD=admin
+
+EXPOSE 5125
+
+CMD [ "python3", "main.py" ]
