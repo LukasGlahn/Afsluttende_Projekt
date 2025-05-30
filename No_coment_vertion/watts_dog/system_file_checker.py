@@ -114,7 +114,6 @@ class SystemFileChecker:
 
         exceptions = sructure["exceptions"]
 
-
         if self.db not in sructure["file_exceptions"]:
             sructure["file_exceptions"][self.db] = {
                 "checks": "pu",
@@ -122,10 +121,8 @@ class SystemFileChecker:
             }
         file_exceptions = sructure["file_exceptions"]
 
-
         for root, dirs, files in os.walk(folder):  
             
-
             match = next(
                 (folder for folder in exceptions if root == folder or root.startswith(folder + "/")),
                 None
@@ -141,11 +138,9 @@ class SystemFileChecker:
                 checks = default_checks
                 severity = default_severity
 
-
             for file in files:
                 try:
                     file_path = os.path.join(root, file)
-
                     
                     if file_path in file_exceptions:
                         if sructure["file_exceptions"][file_path]["checks"] == "":

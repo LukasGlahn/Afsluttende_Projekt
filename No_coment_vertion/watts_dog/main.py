@@ -84,14 +84,12 @@ class System_Checker():
       
     
     def cross_check_database(self):
-
         db_hash = self.get_file_hase(self.database)
         structure = get_folder_path("structure.json")
         structure_hash = self.get_file_hase(structure)
         
         hg_ssid = self.get_ssid()
-        
-        
+          
         host = "127.0.0.1"  
         port = 5050  
 
@@ -104,11 +102,9 @@ class System_Checker():
             "db_hash" : db_hash,
             "structure_hash" : structure_hash
         }
-        
        
         message = json.dumps(devise_info)
 
-        
         client_socket.send(message.encode())  
         data = client_socket.recv(1024).decode()  
 
@@ -123,7 +119,6 @@ class System_Checker():
             return "updated db hash"
         elif response["status"] == "update":
             print("update")
-
             os.remove(self.database)
             self.build_database()
             exit()
